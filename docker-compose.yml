@@ -1,0 +1,40 @@
+services:
+  voice-bridge:
+    build: .
+    container_name: voice-bridge
+    restart: unless-stopped
+    env_file: .env
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Caddy termine le TLS et proxifie le WebSocket.
+  # ConversationRelay exige wss:// avec un certificat valide.
+  caddy:
+    image: caddy:2-alpine
+    container_name: voice-bridge-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      voice-bridge:
+        condition: service_healthy
+
+volumes:
+  caddy_data:
+  caddy_config:

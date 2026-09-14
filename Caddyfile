@@ -1,0 +1,18 @@
+{$PUBLIC_HOSTNAME} {
+	encode gzip
+
+	# Le WebSocket ConversationRelay : Caddy relaie l'upgrade automatiquement.
+	reverse_proxy voice-bridge:8080 {
+		header_up X-Forwarded-Proto https
+		# Un appel peut durer longtemps : pas de coupure prématurée du flux.
+		transport http {
+			read_timeout 3600s
+			write_timeout 3600s
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
